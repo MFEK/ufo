@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<glyph name="uni0302" format="2">
+  <unicode hex="0302"/>
+  <outline>
+    <component base="asciicircum" xOffset="-174.0" yOffset="-604.0"/>
+  </outline>
+</glyph>

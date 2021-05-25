@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<glyph name="uni00B9_fraction_uni2082" format="2">
+  <advance width="896"/>
+  <outline>
+    <component base="uni00B9"/>
+    <component base="fraction" xOffset="266.0"/>
+    <component base="uni2082" xOffset="449.0"/>
+  </outline>
+</glyph>

@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<glyph name="Aring" format="2">
+  <advance width="868"/>
+  <unicode hex="00C5"/>
+  <outline>
+    <contour>
+      <point x="529.0" y="609.0" type="line"/>
+      <point x="529.0" y="699.0" type="line"/>
+      <point x="627.0" y="699.0" type="line"/>
+      <point x="627.0" y="609.0" type="line"/>
+    </contour>
+    <component base="A"/>
+    <component base="ring" xOffset="322.0" yOffset="191.0"/>
+  </outline>
+</glyph>

@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<glyph name="L_O_R_D" format="2">
+  <advance width="3834"/>
+  <unicode hex="E10E"/>
+  <outline>
+    <component base="L" xOffset="-1.0"/>
+    <component base="O" xScale="0.8" yScale="0.8" xOffset="1142.0" yOffset="-8.0"/>
+    <component base="R" xScale="0.8" yScale="0.8" xOffset="2086.0" yOffset="-8.0"/>
+    <component base="D.alt" xScale="0.744" yScale="0.744" xOffset="2964.0" yOffset="-7.0"/>
+  </outline>
+</glyph>
