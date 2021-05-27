@@ -23,6 +23,7 @@ use sdl2::{
     Sdl,
 };
 pub use skulpin::skia_safe;
+use skulpin::skia_safe::{Bitmap, Canvas, ImageInfo, Paint};
 use skulpin::{rafx::api::RafxError, rafx::api::RafxExtents2D, LogicalSize, RendererBuilder};
 use imgui_skia_renderer::Renderer;
 
@@ -48,6 +49,7 @@ fn main() {
     let mut imgui = imgui::Context::create();
     imgui.set_ini_filename(None);
     imgui.style_mut().use_light_colors();
+    let padding = imgui.style().frame_padding;
     let mut imgui_sdl2 = imgui_sdl2::ImguiSdl2::new(&mut imgui, &window);
 
     let mut event_pump = sdl_context
@@ -72,7 +74,28 @@ fn main() {
         ids.borrow_mut().push(id);
     });
 
-    let imgui_renderer = Renderer::new(&mut imgui);
+    let mut imgui_renderer = Renderer::new(&mut imgui);
+
+    let total_letters = 64;
+    let letter_size = 64.; // TODO: Add options for this.
+
+    let mut img_bitmap = Bitmap::new();
+    let img_info = ImageInfo::new((64, 64), skia_safe::ColorType::RGBA8888, skulpin::skia_bindings::SkAlphaType::Opaque, None);
+    let _a = img_bitmap.set_info(&img_info, 0);
+    img_bitmap.alloc_pixels();
+    let mut img_canvas = Canvas::from_bitmap(&img_bitmap, None);
+    img_canvas.draw_circle((32., 32.), 10., &Paint::default());
+
+    let mut img_paint = Paint::default();
+    let local_matrix = skia_safe::Matrix::scale((1.0 / 64., 1.0 / 64.));
+    let sampling_options = skia_safe::SamplingOptions::new(skia_safe::FilterMode::Nearest, skia_safe::MipmapMode::None);
+    let tile_mode = skia_safe::TileMode::Repeat;
+
+    let img_shader = img_bitmap.to_shader((tile_mode, tile_mode), sampling_options, &local_matrix).unwrap();
+    img_paint.set_shader(img_shader);
+    img_paint.set_color(skia_safe::Color::WHITE);
+
+    imgui_renderer.register_image(img_paint);
 
     'main_loop: loop {
         // Create a set of pressed Keys.
@@ -120,6 +143,7 @@ fn main() {
         imgui_sdl2.prepare_frame(imgui.io_mut(), &window, &event_pump.mouse_state());
         let mut ui = imgui.frame();
         let menu_tok = ui.begin_main_menu_bar().unwrap();
+        let menu_bar_size = ui.window_size();
         ui.menu(imgui::im_str!("File"), true, ||{
             imgui::MenuItem::new(imgui::im_str!("Open")).shortcut(imgui::im_str!("Ctrl+O")).build(&ui);
             imgui::MenuItem::new(imgui::im_str!("Reload")).shortcut(imgui::im_str!("F5")).build(&ui);
@@ -131,7 +155,27 @@ fn main() {
             imgui::MenuItem::new(imgui::im_str!("About")).build(&ui);
         });
         menu_tok.end(&ui);
-        //ui.show_demo_window(&mut true);
+
+        imgui::Window::new(imgui::im_str!("##MainWindow"))
+            .position([0., menu_bar_size[1]], imgui::Condition::Always)
+            .size([window_width as f32, window_height as f32], imgui::Condition::Always)
+            .title_bar(false)
+            .build(&ui, || {
+                let per_row = (window_width as f32 / (letter_size + padding[0] * 2.)).floor() - 2.;
+                for i in 0..total_letters {
+                    if i % (per_row) as u32 != 0 {
+                        ui.same_line(0.);
+                    } else {
+                        println!("{0}", window_width);
+                    }
+                    
+                    imgui::ImageButton::new(imgui::TextureId::new(1), [letter_size, letter_size])
+                    .build(&ui);
+                }
+            });
+
+
+
         imgui_sdl2.prepare_render(&ui, &window);
         let dd = ui.render();
 
