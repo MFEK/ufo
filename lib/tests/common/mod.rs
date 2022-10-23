@@ -1,5 +1,3 @@
-mod group_blocks;
-
 #[cfg(test)]
 pub fn init() {
     use env_logger;

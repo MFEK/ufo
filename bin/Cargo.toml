@@ -1,0 +1,48 @@
+[package]
+name = "MFEKufo"
+version = "0.1.0"
+authors = ["Fredrick Brennan <copypaste@kittens.ph>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# For display
+skulpin = { version = "0.13.0" }
+skulpin-renderer = "0.13.0"
+
+# For windowing, contexts, and events
+sdl2 = { version = ">=0.33", features = ["raw-window-handle"] }
+
+# For immediate mode GUI
+imgui = "0.7.0"
+imgui-sdl2 = "0.14.0"
+imgui-skia-renderer = {git = "https://github.com/MFEK/imgui-skia-renderer.rlib", branch = "main"}
+
+#xml parsing
+xmltree = "0.10.1"
+
+unic-ucd-block = "0.9"
+
+# Logging
+log = "0.4.11"
+env_logger = "0.8.3"
+
+## Our crates
+# parses .glif files and gives us a place to put arbitrary data
+glifparser = { git = "https://github.com/MFEK/glifparser.rlib" }
+# IPC
+mfek-ipc = { git = "https://github.com/MFEK/ipc.rlib" }
+
+# For argument parsing
+clap = "2.33.3"
+git-version = "0.3.4"
+
+itertools = "0.10"
+lazy_static = "1"
+font-kit = "0.10"
+
+[profile.release]
+opt-level = 'z'
+lto = true
+codegen-units = 1
