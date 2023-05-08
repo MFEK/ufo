@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<glyph name="longs_longs_h" format="2">
+  <advance width="1131"/>
+  <unicode hex="E106"/>
+  <outline>
+    <component base="longs"/>
+    <component base="longs_h" xOffset="296.0"/>
+  </outline>
+</glyph>

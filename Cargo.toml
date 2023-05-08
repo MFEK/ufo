@@ -1,0 +1,60 @@
+[package]
+name = "MFEKufo"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+gl = "0.14.0"
+skia-safe = { version = "0.53.0", features = ["gl"] }
+skia-bindings = "*"
+
+# For windowing, contexts, and events
+sdl2 = { version = ">=0.34", features = ["raw-window-handle"] }
+
+egui = "0.21.0"
+egui_skia = { git = "https://github.com/MFEK/egui_skia.rlib", branch = "master" }
+egui-sdl2-event = { git = "https://github.com/MFEK/egui-sdl2-event.rlib", branch = "master" }
+# For argument parsing
+clap = "3.0"
+
+# File dialog
+nfd = { git = "https://github.com/MFEK/nfd.rs" }
+
+# File locking
+fs2 = "0.4"
+
+# Command parsing for console
+regex = "1"
+serde_json = "1.0"
+serde = "1.0"
+
+## Our crates
+# parses .glif files and gives us a place to put arbitrary data
+glifparser = { git = "https://github.com/MFEK/glifparser.rlib", branch = "master", features=["skia", "mfek"] }
+#glifparser = { path = "../glifparser.rlib", features=["skia", "mfek"] } # for development
+
+MFEKmath = { git = "https://github.com/MFEK/math.rlib", branch = "main" }
+#MFEKmath = { path = "../math.rlib" } # for development
+
+pub-mod = { git = "https://github.com/MFEK/pub_mod.rlib" }
+
+mfek-ipc = { git = "https://github.com/MFEK/ipc.rlib" }
+#mfek-ipc = { path = "../ipc.rlib" } # for development
+
+glifrenderer = { git = "https://github.com/MFEK/glifrenderer.rlib" }
+#glifrenderer = { path = "../glifrenderer.rlib" } # for development
+
+norad = "0.10.0"
+
+colored = "2.0"
+
+log = "0.4"
+
+image = { version = "0.24.6", features = ["png"], default-features = false }
+csv = "1.2.1"
+
+[features]
+sdl2-static = ["sdl2/bundled", "sdl2/static-link"]
+sdl2-dynamic = []

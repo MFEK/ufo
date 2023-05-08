@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>E</key>
+    <string>E_.glif</string>
+    <key>Hbar</key>
+    <string>H_bar.glif</string>
+    <key>W.alt</key>
+    <string>W_.alt.glif</string>
+    <key>f_f</key>
+    <string>f_f.glif</string>
+    <key>f_i</key>
+    <string>f_i.glif</string>
+    <key>hyphen.alt</key>
+    <string>hyphen.alt.glif</string>
+    <key>longs_t</key>
+    <string>longs_t.glif</string>
+    <key>quotesingle</key>
+    <string>quotesingle.glif</string>
+    <key>uni0432</key>
+    <string>uni0432.glif</string>
+    <key>uniE032</key>
+    <string>uniE_032.glif</string>
+    <key>unie031</key>
+    <string>unie031.glif</string>
+    <key>y_e</key>
+    <string>y_e.glif</string>
+  </dict>
+</plist>

@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<glyph name="uni2010" format="2">
+  <advance width="388"/>
+  <unicode hex="2010"/>
+  <outline>
+    <contour>
+      <point x="77.0" y="355.0" type="line"/>
+      <point x="49.0" y="394.0" type="line"/>
+      <point x="320.0" y="594.0" type="line"/>
+      <point x="348.0" y="555.0" type="line"/>
+    </contour>
+    <contour>
+      <point x="76.0" y="111.0" type="line"/>
+      <point x="48.0" y="149.0" type="line"/>
+      <point x="319.0" y="349.0" type="line"/>
+      <point x="348.0" y="311.0" type="line"/>
+    </contour>
+  </outline>
+</glyph>

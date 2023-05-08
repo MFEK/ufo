@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<glyph name="copyright" format="2">
+  <advance width="765"/>
+  <unicode hex="00A9"/>
+  <outline>
+    <component base="C" xScale="0.6" yScale="0.6" xOffset="204.0" yOffset="157.0"/>
+    <component base="circle"/>
+  </outline>
+</glyph>
