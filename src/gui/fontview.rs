@@ -51,7 +51,10 @@ pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Int
                                         &ufo.metadata,
                                     );
 
-                                    ui.add(egui::ImageButton::new(glyph_image, [128., 128.]));
+                                    ui.add(
+                                        egui::ImageButton::new(glyph_image, [128., 128.])
+                                            .frame(false),
+                                    );
                                 }
                             }
                         } else {
@@ -65,7 +68,9 @@ pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Int
                                     &ufo.metadata,
                                 );
 
-                                ui.add(egui::ImageButton::new(glyph_image, [128., 128.]));
+                                ui.add(
+                                    egui::ImageButton::new(glyph_image, [128., 128.]).frame(false),
+                                );
                             }
                         }
                     });

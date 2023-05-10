@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use egui::{Context, TextureHandle};
 use glifparser::{FlattenedGlif, Glif, MFEKGlif};
-use glifrenderer::{toggles::PreviewMode, viewport::Viewport};
+use glifrenderer::{toggles::PreviewMode, viewport::Viewport, glyph::Style};
 use skia_safe::{Color, Color4f, Font, FontStyle, Paint, Point, Surface, TextBlob, Typeface};
 
 use std::{ffi::OsString as Oss, fs, path::Path};
@@ -53,7 +53,10 @@ impl UFOCache {
         let descender = metadata.descender;
         let mut viewport =
             UFOCache::create_viewport_for_glyph_centered(&mfekglif, 1000., ascender, descender);
-        let (size, image_data) = self.create_canvas_and_get_image_data(&mfekglif, &mut viewport);
+
+        let egui_text_color: Color = Color::new(u32::from_le_bytes(ctx.style().visuals.text_color().to_array().into()));
+
+        let (size, image_data) = self.create_canvas_and_get_image_data(&mfekglif, &mut viewport, egui_text_color);
         let egui_image = egui::ColorImage::from_rgba_unmultiplied([size, size], &image_data);
 
         let texture_handle = ctx.load_texture("my-image", egui_image, Default::default());
@@ -86,11 +89,13 @@ impl UFOCache {
         &mut self,
         mfekglif: &MFEKGlif<()>,
         viewport: &mut Viewport,
+        text_color: Color,
     ) -> (usize, Vec<u8>) {
         let dimension: usize = 128;
 
         // Draw the Glyph name
-        let paint = Paint::new(Color4f::new(0., 0., 0., 1.), None);
+        let mut paint = Paint::new(Color4f::new(1., 1., 1., 1.), None);
+        paint.set_color(text_color);
         let typeface = Typeface::default();
         let font = Font::new(typeface, 12.0); // Adjust the font size here
         let text_blob = TextBlob::new(&mfekglif.name, &font).unwrap();
@@ -109,7 +114,7 @@ impl UFOCache {
         let canvas = surface.canvas();
 
         // Clear the canvas with a white background
-        canvas.clear(Color::WHITE);
+        canvas.clear(Color4f::new(0., 0., 0., 0.));
 
         // Position and draw the text
         let text_position = Point::new(
@@ -119,8 +124,9 @@ impl UFOCache {
         canvas.draw_text_blob(&text_blob, text_position, &paint);
 
         // Draw the glyph
+        let style = Style::new(Color::new(0xffffffff), text_color.into());
         viewport.redraw(canvas);
-        glifrenderer::glyph::draw(canvas, mfekglif, viewport);
+        glifrenderer::glyph::draw(canvas, mfekglif, viewport, Some(style));
 
         // Get the ImageInfo from the Surface
         let image_info = surface.image_info();

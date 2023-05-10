@@ -881,7 +881,6 @@ dependencies = [
 [[package]]
 name = "glifrenderer"
 version = "0.1.2"
-source = "git+https://github.com/MFEK/glifrenderer.rlib#5d08d1ca5e9fbc64b5ada3e14d253a0c548c3362"
 dependencies = [
  "MFEKmath",
  "derive_more",

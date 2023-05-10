@@ -43,8 +43,8 @@ pub-mod = { git = "https://github.com/MFEK/pub_mod.rlib" }
 mfek-ipc = { git = "https://github.com/MFEK/ipc.rlib" }
 #mfek-ipc = { path = "../ipc.rlib" } # for development
 
-glifrenderer = { git = "https://github.com/MFEK/glifrenderer.rlib" }
-#glifrenderer = { path = "../glifrenderer.rlib" } # for development
+#glifrenderer = { git = "https://github.com/MFEK/glifrenderer.rlib" }
+glifrenderer = { path = "../glifrenderer.rlib" } # for development
 
 norad = "0.10.0"
 
