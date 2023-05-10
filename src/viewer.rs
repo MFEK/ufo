@@ -1,8 +1,9 @@
 use core::panic;
 use std::{
+    collections::HashMap,
     path::{Path, PathBuf},
     process::{Command, ExitStatus},
-    str, collections::HashMap,
+    str,
 };
 
 use crate::{
@@ -12,13 +13,16 @@ use crate::{
     },
     ufo_cache::UFOCache,
 };
-use libmfekufo::{blocks::{Block, self}, glyphs};
+use libmfekufo::{
+    blocks::{self, Block},
+    glyphs,
+};
 use mfek_ipc::module::{available, binaries};
 
 pub struct UFO {
     pub metadata: Metadata,
     pub glyph_entries: Vec<GlyphEntry>,
-    pub unicode_blocks: Vec<Block>
+    pub unicode_blocks: Vec<Block>,
 }
 
 #[derive(Default)]
@@ -26,6 +30,7 @@ pub struct UFOViewer {
     pub ufo: Option<UFO>,
     pub ufo_cache: UFOCache,
     pub filter_string: String,
+    pub filter_block: Option<String>,
     pub sort_by_blocks: bool,
     pub glyph_name_map: HashMap<String, usize>,
     should_exit: bool,
@@ -48,7 +53,7 @@ impl UFOViewer {
             let ufo = UFO {
                 metadata,
                 glyph_entries,
-                unicode_blocks
+                unicode_blocks,
             };
 
             self.populate_glyph_name_map(&ufo);

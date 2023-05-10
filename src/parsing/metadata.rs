@@ -13,7 +13,7 @@ pub fn parse_metadata(output: &str) -> Result<Metadata, Box<dyn Error>> {
 
     let name = lines.next().ok_or("Missing name")?;
     let name: Value = serde_json::from_str(name)?;
-    let name = name.as_str().ok_or("Name is not a string")?.to_string();
+    let name = name.as_str().unwrap_or("").to_string();
 
     let ascender = lines.next().ok_or("Missing ascender")?.parse::<i32>()?;
     let descender = lines.next().ok_or("Missing descender")?.parse::<i32>()?;
