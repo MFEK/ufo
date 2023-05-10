@@ -16,6 +16,8 @@ pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Int
         viewer.ufo_cache.rebuild_images(ctx, &ufo.metadata);
     }
 
+    viewer.ufo_cache.clear_rebuild();
+
     let interface_size = interface.get_size();
     let window_rect = Rect::from_two_pos(
         Pos2::new(0., 24.),

@@ -59,6 +59,10 @@ impl UFOCache {
             }
         }
     }
+    
+    pub fn clear_rebuild(&mut self) {
+        self.needs_rebuild = VecDeque::new();
+    }
 
     fn generate_image_handle(
         &mut self,
