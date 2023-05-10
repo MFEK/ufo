@@ -1,7 +1,7 @@
 use serde_json::Value;
 use std::error::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Metadata {
     pub name: String,
     pub ascender: i32,
