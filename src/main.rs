@@ -35,7 +35,7 @@ fn main() {
     let mut egui_sdl2_state = EguiSDL2State::new(
         &interface.sdl_window,
         &interface.sdl_context.video().unwrap(),
-        DpiMode::Auto,
+        DpiMode::Custom(1.),
     );
     let mut egui_skia = EguiSkia::new();
     let mut surface = interface.create_surface();
