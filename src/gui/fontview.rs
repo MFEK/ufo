@@ -1,4 +1,4 @@
-use egui::{Pos2, Rect};
+use egui::{Pos2, Rect, Style, Frame, Stroke, style::WidgetVisuals, Color32};
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 use libmfekufo::glyphs::GlyphRef;
@@ -25,6 +25,29 @@ pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Int
     );
 
     filter_side_panel(ctx, viewer);
+
+    let original_style = ctx.style().clone();
+
+    let frame = WidgetVisuals {
+        bg_fill: Color32::from_white_alpha(0),
+        weak_bg_fill: Color32::from_white_alpha(0),
+        bg_stroke: Stroke::new(8., Color32::from_white_alpha(0)),
+        rounding: egui::Rounding::default(),
+        fg_stroke: Stroke::new(8., Color32::from_white_alpha(0)),
+        expansion: 0.,
+    };
+    
+    ctx.set_style(Style {
+        visuals: egui::Visuals {
+            widgets: egui::style::Widgets {
+                active: frame, // Set the custom frame style for ImageButtons
+                inactive: frame,
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        ..Default::default()
+    });
 
     egui::CentralPanel::default().show(ctx, |ui| {
         if let Some(ufo) = &viewer.ufo {
@@ -77,7 +100,7 @@ pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Int
                                 );
 
                                 ui.add(
-                                    egui::ImageButton::new(glyph_image, [128., 128.]).frame(false),
+                                    egui::ImageButton::new(glyph_image, [128., 128.]),
                                 );
                             }
                         }
@@ -91,6 +114,8 @@ pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Int
             });
         }
     });
+
+    ctx.set_style(original_style);
 }
 
 fn filter_side_panel(ctx: &egui::Context, viewer: &mut UFOViewer) {
