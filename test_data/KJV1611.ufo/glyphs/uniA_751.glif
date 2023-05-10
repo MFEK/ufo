@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<glyph name="uniA751" format="2">
+  <advance width="489"/>
+  <unicode hex="A751"/>
+  <outline>
+    <contour>
+      <point x="40.0" y="-72.0" type="curve"/>
+      <point x="120.0" y="12.0" type="line"/>
+      <point x="153.048804345" y="4.2755616883"/>
+      <point x="329.47072536" y="-42.2222120247"/>
+      <point x="396.254924683" y="-42.2222120247" type="curve" smooth="yes"/>
+      <point x="434.203054102" y="-42.2222120247"/>
+      <point x="472.148188811" y="-35.8439249476"/>
+      <point x="508.0" y="-23.4013671875" type="curve"/>
+      <point x="529.0" y="-37.4013671875" type="line"/>
+      <point x="440.0" y="-152.0" type="line"/>
+      <point x="323.201084998" y="-107.89585296"/>
+      <point x="188.24452901" y="-77.004144662"/>
+    </contour>
+    <component base="p"/>
+  </outline>
+</glyph>

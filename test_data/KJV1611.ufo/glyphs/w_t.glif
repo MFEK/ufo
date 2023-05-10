@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<glyph name="w_t" format="2">
+  <advance width="918"/>
+  <unicode hex="E11D"/>
+  <outline>
+    <component base="combtabove" xOffset="524.0" yOffset="697.0"/>
+    <component base="w.alt2" xOffset="37.0"/>
+  </outline>
+</glyph>

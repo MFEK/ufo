@@ -1,18 +1,17 @@
 use egui_sdl2_event::DpiMode;
 
-mod filedialog;
-mod fontview;
+mod gui;
 mod interface;
-mod menu;
+mod parsing;
 mod ufo_cache;
 mod util;
 mod viewer;
-mod parsing;
 
 use interface::Interface;
 
-use fontview::fontview;
-use menu::menu;
+use gui::fontview::fontview;
+use gui::menu::menu;
+use libmfekufo::{blocks, glyphs};
 
 use crate::viewer::UFOViewer;
 

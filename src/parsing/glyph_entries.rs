@@ -1,7 +1,6 @@
+use csv::{ReaderBuilder, StringRecord};
 use std::collections::HashMap;
 use std::error::Error;
-use csv::{StringRecord, ReaderBuilder};
-
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct GlyphEntry {
@@ -15,17 +14,34 @@ pub struct GlyphEntry {
 impl From<(&HashMap<String, usize>, &StringRecord)> for GlyphEntry {
     fn from((header_map, record): (&HashMap<String, usize>, &StringRecord)) -> Self {
         GlyphEntry {
-            glifname: record.get(*header_map.get("glifname").unwrap()).unwrap().to_string(),
-            codepoints: record.get(*header_map.get("codepoints").unwrap()).unwrap().to_string(),
-            uniname: record.get(*header_map.get("uniname").unwrap()).unwrap().to_string(),
-            unicat: record.get(*header_map.get("unicat").unwrap()).unwrap().to_string(),
-            filename: record.get(*header_map.get("filename").unwrap()).unwrap().to_string(),
+            glifname: record
+                .get(*header_map.get("glifname").unwrap())
+                .unwrap()
+                .to_string(),
+            codepoints: record
+                .get(*header_map.get("codepoints").unwrap())
+                .unwrap()
+                .to_string(),
+            uniname: record
+                .get(*header_map.get("uniname").unwrap())
+                .unwrap()
+                .to_string(),
+            unicat: record
+                .get(*header_map.get("unicat").unwrap())
+                .unwrap()
+                .to_string(),
+            filename: record
+                .get(*header_map.get("filename").unwrap())
+                .unwrap()
+                .to_string(),
         }
     }
 }
 
 pub fn parse_tsv(tsv_data: &str) -> Result<Vec<GlyphEntry>, Box<dyn Error>> {
-    let mut reader = ReaderBuilder::new().delimiter(b'\t').from_reader(tsv_data.as_bytes());
+    let mut reader = ReaderBuilder::new()
+        .delimiter(b'\t')
+        .from_reader(tsv_data.as_bytes());
 
     let header_map = {
         let headers = reader.headers()?.iter().enumerate();

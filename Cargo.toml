@@ -54,6 +54,11 @@ log = "0.4"
 
 image = { version = "0.24.6", features = ["png"], default-features = false }
 csv = "1.2.1"
+fuzzy-matcher = "0.3.7"
+
+libmfekufo = {path = "src/ufoblocks"}
+
+kurbo = { version = "0.9.0", features = ["serde", "std"] }
 
 [features]
 sdl2-static = ["sdl2/bundled", "sdl2/static-link"]

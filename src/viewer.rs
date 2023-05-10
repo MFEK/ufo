@@ -1,18 +1,33 @@
 use core::panic;
-use std::{path::{PathBuf, Path}, process::{Command, ExitStatus}, str};
+use std::{
+    path::{Path, PathBuf},
+    process::{Command, ExitStatus},
+    str, collections::HashMap,
+};
 
+use crate::{
+    parsing::{
+        glyph_entries::{self, parse_tsv, GlyphEntry},
+        metadata::{parse_metadata, Metadata},
+    },
+    ufo_cache::UFOCache,
+};
+use libmfekufo::{blocks::{Block, self}, glyphs};
 use mfek_ipc::module::{available, binaries};
-use crate::{ufo_cache::UFOCache, parsing::{glyph_entries::{GlyphEntry, parse_tsv, self}, metadata::{parse_metadata, Metadata}}};
 
 pub struct UFO {
     pub metadata: Metadata,
-    pub glyph_entries: Vec<GlyphEntry>
+    pub glyph_entries: Vec<GlyphEntry>,
+    pub unicode_blocks: Vec<Block>
 }
 
 #[derive(Default)]
 pub struct UFOViewer {
     pub ufo: Option<UFO>,
     pub ufo_cache: UFOCache,
+    pub filter_string: String,
+    pub sort_by_blocks: bool,
+    pub glyph_name_map: HashMap<String, usize>,
     should_exit: bool,
 }
 
@@ -20,17 +35,23 @@ impl UFOViewer {
     pub fn set_font(&mut self, path: PathBuf) {
         if let Ok((v, pbuf)) = available("metadata", "0.0.4") {
             match v {
-                mfek_ipc::module::Version::OutOfDate(_) => log::warn!("Version mismatch found with mfekmetadata!"),
+                mfek_ipc::module::Version::OutOfDate(_) => {
+                    log::warn!("Version mismatch found with mfekmetadata!")
+                }
                 _ => {}
             }
 
             let glyph_entries = self.fetch_glyph_entries(&pbuf, &path);
-            let metadata = self.fetch_metadata(&pbuf,&path);
+            let metadata = self.fetch_metadata(&pbuf, &path);
+            let unicode_blocks = Self::get_unicode_blocks(path);
 
             let ufo = UFO {
                 metadata,
-                glyph_entries
+                glyph_entries,
+                unicode_blocks
             };
+
+            self.populate_glyph_name_map(&ufo);
 
             self.ufo = Some(ufo);
             self.ufo_cache = UFOCache::default();
@@ -39,19 +60,41 @@ impl UFOViewer {
         }
     }
 
-    fn fetch_glyph_entries<P: AsRef<Path>>(&mut self, metadata_path: P, font_path: P) -> Vec<GlyphEntry> {
+    fn populate_glyph_name_map(&mut self, ufo: &UFO) {
+        self.glyph_name_map.clear();
+
+        for (idx, entry) in ufo.glyph_entries.iter().enumerate() {
+            self.glyph_name_map.insert(entry.glifname.clone(), idx);
+        }
+    }
+
+    fn get_unicode_blocks<P: AsRef<Path>>(path: P) -> Vec<Block> {
+        let gvec = glyphs::for_ufo(path.as_ref().to_str().unwrap().to_owned());
+        let unique_encodings = glyphs::to_unique_codepoints(&gvec);
+        let blocks = blocks::for_unicode_data(&unique_encodings);
+        blocks::grouped_by(&gvec, &blocks)
+    }
+
+    fn fetch_glyph_entries<P: AsRef<Path>>(
+        &mut self,
+        metadata_path: P,
+        font_path: P,
+    ) -> Vec<GlyphEntry> {
         let output = Command::new(metadata_path.as_ref())
             .args([font_path.as_ref().to_str().unwrap(), "glyphs"])
             .output()
             .expect("Call to list glyphs from mfekmetadata failed!");
 
         if !output.status.success() {
-            panic!("mfekmetadata returned a non-zero exit code: {0}", output.status.code().unwrap())
+            panic!(
+                "mfekmetadata returned a non-zero exit code: {0}",
+                output.status.code().unwrap()
+            )
         }
 
-            // Convert the stdout Vec<u8> to a &str
-        let stdout_str = str::from_utf8(&output.stdout)
-            .expect("The command's output was not valid UTF-8");
+        // Convert the stdout Vec<u8> to a &str
+        let stdout_str =
+            str::from_utf8(&output.stdout).expect("The command's output was not valid UTF-8");
 
         // Pass the &str to the parse_tsv function
         match parse_tsv(stdout_str) {
@@ -63,19 +106,37 @@ impl UFOViewer {
     }
 
     fn fetch_metadata<P: AsRef<Path>>(&mut self, metadata_path: P, font_path: P) -> Metadata {
-        let metadata_path_str = font_path.as_ref().to_str().expect("Failed to convert font path to str.");
+        let metadata_path_str = font_path
+            .as_ref()
+            .to_str()
+            .expect("Failed to convert font path to str.");
         // let's get the familyName of the ufo and store that in the viewer
         let output = Command::new(metadata_path.as_ref())
-            .args([metadata_path_str, "arbitrary", "-k", "postscriptFullName", "-k", "ascender", "-k", "descender", "-k", "copyright"])
+            .args([
+                metadata_path_str,
+                "arbitrary",
+                "-k",
+                "postscriptFullName",
+                "-k",
+                "ascender",
+                "-k",
+                "descender",
+                "-k",
+                "copyright",
+            ])
             .output()
             .expect("Failed to run mfekmetadata command to find familyName!");
 
         if !output.status.success() {
-            panic!("mfekmetadata exited with a non-zero exit code: {:?} \n {:?}", output.status.code().unwrap(), output)
+            panic!(
+                "mfekmetadata exited with a non-zero exit code: {:?} \n {:?}",
+                output.status.code().unwrap(),
+                output
+            )
         }
 
-        let stdout_str = str::from_utf8(&output.stdout)
-            .expect("The command's output was not valid UTF-8");
+        let stdout_str =
+            str::from_utf8(&output.stdout).expect("The command's output was not valid UTF-8");
 
         match parse_metadata(stdout_str) {
             Ok(data) => {

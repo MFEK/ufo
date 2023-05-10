@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<glyph name="E.alt3" format="2">
+  <advance width="765"/>
+  <outline>
+    <contour>
+      <point x="319.0" y="450.0" type="line"/>
+      <point x="319.0" y="553.0" type="line"/>
+      <point x="663.0" y="553.0" type="line"/>
+      <point x="663.0" y="450.0" type="line"/>
+    </contour>
+    <component base="C" xOffset="-6.0"/>
+  </outline>
+</glyph>
