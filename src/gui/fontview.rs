@@ -11,7 +11,7 @@ use crate::{
 
 pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Interface) {
     viewer.ufo_cache.create_default_texture(ctx);
-    
+
     if let Some(ufo) = &viewer.ufo {
         viewer.ufo_cache.rebuild_images(ctx, &ufo.metadata);
     }
@@ -94,19 +94,24 @@ pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Int
 fn filter_side_panel(ctx: &egui::Context, viewer: &mut UFOViewer) {
     if let Some(ufo) = &viewer.ufo {
         egui::SidePanel::left("my_left_panel").show(ctx, |ui| {
-            if ui
-                .selectable_label(viewer.filter_block.is_none(), "All")
-                .clicked()
-            {
-                viewer.filter_block = None;
-            }
-
-            for block in &ufo.unicode_blocks {
-                let checked = Some(block.name) == viewer.filter_block.as_deref();
-                if ui.selectable_label(checked, block.name).clicked() {
-                    viewer.filter_block = Some(block.name.to_owned());
+            egui::ScrollArea::vertical()
+            .stick_to_right(true)
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                if ui
+                    .selectable_label(viewer.filter_block.is_none(), "All")
+                    .clicked()
+                {
+                    viewer.filter_block = None;
                 }
-            }
+
+                for block in &ufo.unicode_blocks {
+                    let checked = Some(block.name) == viewer.filter_block.as_deref();
+                    if ui.selectable_label(checked, block.name).clicked() {
+                        viewer.filter_block = Some(block.name.to_owned());
+                    }
+                }
+            });
         });
     }
 }
