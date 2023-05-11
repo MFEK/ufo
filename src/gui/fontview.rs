@@ -56,11 +56,12 @@ pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Int
                     ui.set_max_width(ui.available_width());
                     ui.horizontal_wrapped(|ui| {
                         let filtered_vec: Vec<&GlyphEntry> =
-                        filter_glyphs(&ufo.glyph_entries, &viewer.filter_string.to_lowercase());
-                    
+                            filter_glyphs(&ufo.glyph_entries, &viewer.filter_string.to_lowercase());
+
                         let filtered_set: HashSet<_> = filtered_vec.into_iter().cloned().collect();
-                        
-                        let visible_set: HashSet<_> = if let Some(block_name) = &viewer.filter_block {
+
+                        let visible_set: HashSet<_> = if let Some(block_name) = &viewer.filter_block
+                        {
                             ufo.unicode_blocks
                                 .iter()
                                 .find(|block| block.name == *block_name)
@@ -77,25 +78,26 @@ pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Int
                         } else {
                             filtered_set
                         };
-                        
+
                         ufo.glyph_entries
                             .iter()
                             .filter(|entry| visible_set.contains(entry))
                             .for_each(|entry| {
-                                let glyph_image = viewer.ufo_cache.get_image_handle(&entry, &ufo.metadata);
-                        
-                                let response = ui.add(egui::ImageButton::new(glyph_image, [128., 128.]));
-                        
+                                let glyph_image =
+                                    viewer.ufo_cache.get_image_handle(&entry, &ufo.metadata);
+
+                                let response =
+                                    ui.add(egui::ImageButton::new(glyph_image, [128., 128.]));
+
                                 if response.clicked() {
                                     let glif_filename = entry.filename.clone();
-                        
+
                                     Command::new("MFEKglif")
                                         .arg(glif_filename)
                                         .spawn()
                                         .expect("Couldn't open MFEKglif! Is it installed?");
                                 }
                             });
-                        
                     });
                 });
         } else {
@@ -138,22 +140,22 @@ fn filter_side_panel(ctx: &egui::Context, viewer: &mut UFOViewer) {
 fn filter_glyphs<'a>(glyph_entries: &'a [GlyphEntry], query: &str) -> Vec<&'a GlyphEntry> {
     let matcher = SkimMatcherV2::default();
 
-    let mut scored_entries: Vec<(&'a GlyphEntry, i64)> = glyph_entries
+    let scored_entries: Vec<_> = glyph_entries
         .iter()
         .filter_map(|entry| {
             // Calculate string similarity using the Skim algorithm
             let score = matcher.fuzzy_match(&entry.glifname.to_lowercase(), &query);
 
-            match score {
-                Some(score) => Some((entry, score)),
-                None => None,
-            }
+            score.map(|s| (entry, s))
         })
         .collect();
 
     // Sort scored_entries by score in descending order
-    scored_entries.sort_unstable_by(|a, b| b.1.cmp(&a.1));
+    let mut sorted_entries: Vec<_> = scored_entries.into_iter().map(|(entry, _)| entry).collect();
+    sorted_entries.sort_unstable_by_key(|entry| {
+        let score = matcher.fuzzy_match(&entry.glifname.to_lowercase(), &query);
+        -(score.unwrap_or(0))
+    });
 
-    // Create a new Vec containing only the references to GlyphEntry
-    scored_entries.into_iter().map(|(entry, _)| entry).collect()
+    sorted_entries
 }
