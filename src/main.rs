@@ -2,6 +2,7 @@ use egui_sdl2_event::DpiMode;
 
 mod gui;
 mod interface;
+mod ipc;
 mod parsing;
 mod ufo_cache;
 mod util;

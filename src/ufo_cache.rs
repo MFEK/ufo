@@ -1,29 +1,28 @@
-use std::{collections::{HashMap, HashSet, VecDeque}, time::Instant};
+use std::{
+    collections::{HashMap, VecDeque},
+    path::PathBuf,
+    time::Instant,
+};
 
 use egui::{Context, TextureHandle};
 use glifparser::{FlattenedGlif, Glif, MFEKGlif};
-use glifrenderer::{toggles::PreviewMode, viewport::Viewport, glyph::Style};
-use skia_safe::{Color, Color4f, Font, FontStyle, Paint, Point, Surface, TextBlob, Typeface};
+use glifrenderer::{glyph::Style, toggles::PreviewMode, viewport::Viewport};
+use skia_safe::{Color, Color4f, Font, Paint, Point, Surface, TextBlob, Typeface};
 
 use std::{ffi::OsString as Oss, fs, path::Path};
 
 use crate::parsing::{glyph_entries::GlyphEntry, metadata::Metadata};
-pub struct Texture<'a> {
-    size: [usize; 2],
-    texture_handle: &'a TextureHandle,
-}
 
 #[derive(Default)]
 pub struct UFOCache {
     default_texture: Option<TextureHandle>,
     texture_handles: HashMap<GlyphEntry, TextureHandle>,
-    needs_rebuild: VecDeque<GlyphEntry>
+    needs_rebuild: VecDeque<GlyphEntry>,
 }
 
 impl UFOCache {
     pub fn get_image_handle(
         &mut self,
-        ctx: &Context,
         glyph_entry: &GlyphEntry,
         metadata: &Metadata,
     ) -> &TextureHandle {
@@ -36,9 +35,11 @@ impl UFOCache {
             return self.default_texture.as_ref().unwrap();
         }
     }
-    
+
     pub fn create_default_texture(&mut self, ctx: &Context) {
-        if self.default_texture.is_some() { return; }
+        if self.default_texture.is_some() {
+            return;
+        }
         let (size, image_data) = Self::create_default_image();
         let egui_image = egui::ColorImage::from_rgba_unmultiplied([size, size], &image_data);
 
@@ -46,8 +47,13 @@ impl UFOCache {
         self.default_texture = Some(texture_handle);
     }
 
+    pub fn force_rebuild(&mut self, entry: &GlyphEntry) {
+        self.texture_handles.remove(entry);
+        self.needs_rebuild.push_front(entry.clone())
+    }
+
     pub fn rebuild_images(&mut self, ctx: &Context, metadata: &Metadata) {
-        let time_limit = 1./30.;
+        let time_limit = 1. / 30.;
         let start_time = Instant::now();
 
         while start_time.elapsed().as_secs_f32() < time_limit {
@@ -59,7 +65,7 @@ impl UFOCache {
             }
         }
     }
-    
+
     pub fn clear_rebuild(&mut self) {
         self.needs_rebuild = VecDeque::new();
     }
@@ -90,9 +96,12 @@ impl UFOCache {
         let mut viewport =
             UFOCache::create_viewport_for_glyph_centered(&mfekglif, ascender, descender);
 
-        let egui_text_color: Color = Color::new(u32::from_le_bytes(ctx.style().visuals.text_color().to_array().into()));
+        let egui_text_color: Color = Color::new(u32::from_le_bytes(
+            ctx.style().visuals.text_color().to_array().into(),
+        ));
 
-        let (size, image_data) = self.create_canvas_and_get_image_data(&mfekglif, &mut viewport, egui_text_color);
+        let (size, image_data) =
+            self.create_canvas_and_get_image_data(&mfekglif, &mut viewport, egui_text_color);
         let egui_image = egui::ColorImage::from_rgba_unmultiplied([size, size], &image_data);
 
         let texture_handle = ctx.load_texture(glif_name, egui_image, Default::default());

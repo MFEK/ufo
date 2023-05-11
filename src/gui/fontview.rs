@@ -1,13 +1,10 @@
-use egui::{Pos2, Rect, Style, Frame, Stroke, style::WidgetVisuals, Color32};
+use std::{collections::HashSet, process::Command};
+
+use egui::{style::WidgetVisuals, Color32, Stroke, Style};
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
-use libmfekufo::glyphs::GlyphRef;
 
-use crate::{
-    interface::Interface,
-    parsing::glyph_entries::GlyphEntry,
-    viewer::{UFOViewer, UFO},
-};
+use crate::{interface::Interface, parsing::glyph_entries::GlyphEntry, viewer::UFOViewer};
 
 pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Interface) {
     viewer.ufo_cache.create_default_texture(ctx);
@@ -17,12 +14,7 @@ pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Int
     }
 
     viewer.ufo_cache.clear_rebuild();
-
-    let interface_size = interface.get_size();
-    let window_rect = Rect::from_two_pos(
-        Pos2::new(0., 24.),
-        Pos2::new(interface_size.0, interface_size.1),
-    );
+    viewer.handle_filesystem_events();
 
     filter_side_panel(ctx, viewer);
 
@@ -36,18 +28,6 @@ pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Int
         fg_stroke: Stroke::new(8., Color32::from_white_alpha(0)),
         expansion: 0.,
     };
-    
-    ctx.set_style(Style {
-        visuals: egui::Visuals {
-            widgets: egui::style::Widgets {
-                active: frame, // Set the custom frame style for ImageButtons
-                inactive: frame,
-                ..Default::default()
-            },
-            ..Default::default()
-        },
-        ..Default::default()
-    });
 
     egui::CentralPanel::default().show(ctx, |ui| {
         if let Some(ufo) = &viewer.ufo {
@@ -60,48 +40,62 @@ pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Int
                 .stick_to_right(true)
                 .auto_shrink([false, false])
                 .show(ui, |ui| {
+                    ui.set_style(Style {
+                        visuals: egui::Visuals {
+                            widgets: egui::style::Widgets {
+                                active: frame, // Set the custom frame style for ImageButtons
+                                inactive: frame,
+                                ..Default::default()
+                            },
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    });
+
                     ui.set_width(ui.available_width());
                     ui.set_max_width(ui.available_width());
                     ui.horizontal_wrapped(|ui| {
-                        if let Some(block_name) = &viewer.filter_block {
-                            for block in &ufo.unicode_blocks {
-                                if block.name != block_name {
-                                    continue;
-                                }
+                        let filtered_vec: Vec<&GlyphEntry> =
+                            filter_glyphs(&ufo.glyph_entries, &viewer.filter_string.to_lowercase());
 
-                                for gref in &block.glyphs {
-                                    let entry_idx = viewer
-                                        .glyph_name_map
-                                        .get(&gref.name)
-                                        .expect("Something went wrong.");
-                                    let entry = &ufo.glyph_entries[*entry_idx];
+                        let filtered_set: HashSet<GlyphEntry> =
+                            filtered_vec.into_iter().map(|x| x.clone()).collect();
 
-                                    let glyph_image = viewer.ufo_cache.get_image_handle(
-                                        ui.ctx(),
-                                        entry,
-                                        &ufo.metadata,
-                                    );
+                        let visible_set: HashSet<GlyphEntry> =
+                            if let Some(block_name) = &viewer.filter_block {
+                                ufo.unicode_blocks
+                                    .iter()
+                                    .find(|block| block.name == *block_name)
+                                    .map(|block| {
+                                        let block_set: HashSet<String> =
+                                            block.glyphs.iter().map(|x| x.name.clone()).collect();
+                                        filtered_set
+                                            .iter()
+                                            .filter(|x| block_set.contains(&x.glifname))
+                                            .cloned()
+                                            .collect()
+                                    })
+                                    .unwrap_or_else(HashSet::new)
+                            } else {
+                                filtered_set
+                            };
 
-                                    ui.add(
-                                        egui::ImageButton::new(glyph_image, [128., 128.])
-                                            .frame(false),
-                                    );
-                                }
-                            }
-                        } else {
-                            for entry in filter_glyphs(
-                                &ufo.glyph_entries,
-                                &viewer.filter_string.to_lowercase(),
-                            ) {
-                                let glyph_image = viewer.ufo_cache.get_image_handle(
-                                    ui.ctx(),
-                                    entry,
-                                    &ufo.metadata,
-                                );
+                        for entry in &ufo.glyph_entries {
+                            if !visible_set.contains(entry) { continue; }
+                            
+                            let glyph_image =
+                                viewer.ufo_cache.get_image_handle(&entry, &ufo.metadata);
 
-                                ui.add(
-                                    egui::ImageButton::new(glyph_image, [128., 128.]),
-                                );
+                            let response =
+                                ui.add(egui::ImageButton::new(glyph_image, [128., 128.]));
+
+                            if response.clicked() {
+                                let glif_filename = entry.filename.clone();
+
+                                Command::new("MFEKglif")
+                                    .arg(glif_filename)
+                                    .spawn()
+                                    .expect("Couldn't open MFEKglif! Is it installed?");
                             }
                         }
                     });
@@ -122,23 +116,23 @@ fn filter_side_panel(ctx: &egui::Context, viewer: &mut UFOViewer) {
     if let Some(ufo) = &viewer.ufo {
         egui::SidePanel::left("my_left_panel").show(ctx, |ui| {
             egui::ScrollArea::vertical()
-            .stick_to_right(true)
-            .auto_shrink([false, false])
-            .show(ui, |ui| {
-                if ui
-                    .selectable_label(viewer.filter_block.is_none(), "All")
-                    .clicked()
-                {
-                    viewer.filter_block = None;
-                }
-
-                for block in &ufo.unicode_blocks {
-                    let checked = Some(block.name) == viewer.filter_block.as_deref();
-                    if ui.selectable_label(checked, block.name).clicked() {
-                        viewer.filter_block = Some(block.name.to_owned());
+                .stick_to_right(true)
+                .auto_shrink([false, false])
+                .show(ui, |ui| {
+                    if ui
+                        .selectable_label(viewer.filter_block.is_none(), "All")
+                        .clicked()
+                    {
+                        viewer.filter_block = None;
                     }
-                }
-            });
+
+                    for block in &ufo.unicode_blocks {
+                        let checked = Some(block.name) == viewer.filter_block.as_deref();
+                        if ui.selectable_label(checked, block.name).clicked() {
+                            viewer.filter_block = Some(block.name.to_owned());
+                        }
+                    }
+                });
         });
     }
 }
