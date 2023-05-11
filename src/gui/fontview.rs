@@ -56,48 +56,46 @@ pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Int
                     ui.set_max_width(ui.available_width());
                     ui.horizontal_wrapped(|ui| {
                         let filtered_vec: Vec<&GlyphEntry> =
-                            filter_glyphs(&ufo.glyph_entries, &viewer.filter_string.to_lowercase());
-
-                        let filtered_set: HashSet<GlyphEntry> =
-                            filtered_vec.into_iter().map(|x| x.clone()).collect();
-
-                        let visible_set: HashSet<GlyphEntry> =
-                            if let Some(block_name) = &viewer.filter_block {
-                                ufo.unicode_blocks
-                                    .iter()
-                                    .find(|block| block.name == *block_name)
-                                    .map(|block| {
-                                        let block_set: HashSet<String> =
-                                            block.glyphs.iter().map(|x| x.name.clone()).collect();
-                                        filtered_set
-                                            .iter()
-                                            .filter(|x| block_set.contains(&x.glifname))
-                                            .cloned()
-                                            .collect()
-                                    })
-                                    .unwrap_or_else(HashSet::new)
-                            } else {
-                                filtered_set
-                            };
-
-                        for entry in &ufo.glyph_entries {
-                            if !visible_set.contains(entry) { continue; }
-                            
-                            let glyph_image =
-                                viewer.ufo_cache.get_image_handle(&entry, &ufo.metadata);
-
-                            let response =
-                                ui.add(egui::ImageButton::new(glyph_image, [128., 128.]));
-
-                            if response.clicked() {
-                                let glif_filename = entry.filename.clone();
-
-                                Command::new("MFEKglif")
-                                    .arg(glif_filename)
-                                    .spawn()
-                                    .expect("Couldn't open MFEKglif! Is it installed?");
-                            }
-                        }
+                        filter_glyphs(&ufo.glyph_entries, &viewer.filter_string.to_lowercase());
+                    
+                        let filtered_set: HashSet<_> = filtered_vec.into_iter().cloned().collect();
+                        
+                        let visible_set: HashSet<_> = if let Some(block_name) = &viewer.filter_block {
+                            ufo.unicode_blocks
+                                .iter()
+                                .find(|block| block.name == *block_name)
+                                .map(|block| {
+                                    let block_set: HashSet<String> =
+                                        block.glyphs.iter().map(|x| x.name.clone()).collect();
+                                    filtered_set
+                                        .iter()
+                                        .filter(|x| block_set.contains(&x.glifname))
+                                        .cloned()
+                                        .collect()
+                                })
+                                .unwrap_or_else(HashSet::new)
+                        } else {
+                            filtered_set
+                        };
+                        
+                        ufo.glyph_entries
+                            .iter()
+                            .filter(|entry| visible_set.contains(entry))
+                            .for_each(|entry| {
+                                let glyph_image = viewer.ufo_cache.get_image_handle(&entry, &ufo.metadata);
+                        
+                                let response = ui.add(egui::ImageButton::new(glyph_image, [128., 128.]));
+                        
+                                if response.clicked() {
+                                    let glif_filename = entry.filename.clone();
+                        
+                                    Command::new("MFEKglif")
+                                        .arg(glif_filename)
+                                        .spawn()
+                                        .expect("Couldn't open MFEKglif! Is it installed?");
+                                }
+                            });
+                        
                     });
                 });
         } else {
