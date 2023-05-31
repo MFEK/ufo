@@ -1,0 +1,3 @@
+[submodule "src/ufoblocks"]
+	path = src/ufoblocks
+	url = https://github.com/MFEK/ufoblocks.rlib
