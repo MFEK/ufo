@@ -118,16 +118,18 @@ impl UFOCache {
         let canvas_size = 128.0;
         let factor = canvas_size / (ascender - descender + 12) as f32 * 0.6;
         let glyph_width = glyph.width.unwrap_or(0);
-        let x_offset = (canvas_size / 2.0) - (glyph_width as f32 * factor / 2.0);
-        let y_offset = descender as f32 * factor - 12.;
-
+        let x_offset = (glyph_width as f32 / 2.0);
+        let y_offset = (ascender as f32 - descender as f32)/2.;
+    
         let mut viewport = Viewport::default();
         viewport.winsize = (canvas_size, canvas_size);
         viewport.factor = factor;
-        viewport.offset = (x_offset, y_offset);
+        viewport.offset = (-x_offset, y_offset);
         viewport.preview_mode = PreviewMode::Paper;
+        
         return viewport;
     }
+    
 
     fn create_default_image() -> (usize, Vec<u8>) {
         let dimension = 128;
