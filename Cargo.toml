@@ -13,9 +13,9 @@ skia-bindings = "*"
 # For windowing, contexts, and events
 sdl2 = { version = ">=0.34", features = ["raw-window-handle"] }
 
-egui = "0.21.0"
-egui_skia = { git = "https://github.com/MFEK/egui_skia.rlib", branch = "master" }
-egui-sdl2-event = { git = "https://github.com/MFEK/egui-sdl2-event.rlib", branch = "master" }
+egui = { version = "=0.22.0" }
+egui_skia = { version = "=0.3.0" }
+egui-sdl2-event = { version = "=0.4.0", package = "egui-skia-sdl2-event" }
 # For argument parsing
 clap = "3.0"
 
