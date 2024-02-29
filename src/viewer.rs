@@ -9,12 +9,10 @@ use std::{
 };
 
 use crate::{
-    ipc,
-    parsing::{
+    interpolation, ipc, parsing::{
         glyph_entries::{self, parse_tsv, GlyphEntry},
         metadata::{parse_metadata, Metadata},
-    },
-    ufo_cache::UFOCache,
+    }, ufo_cache::{self, UFOCache}
 };
 use glifparser::{FlattenedGlif, Glif, MFEKGlif};
 use libmfekufo::{
@@ -31,13 +29,15 @@ pub struct UFO {
 
 //#[derive(Default)]
 pub struct UFOViewer {
-    pub ufo: Option<UFO>,
-    pub ufo_cache: UFOCache,
+    pub active_master_idx: Option<usize>,
+    pub masters: Vec<UFO>,
     pub filter_string: String,
     pub filter_block: Option<String>,
     pub sort_by_blocks: bool,
     pub glyph_name_map: HashMap<String, usize>,
+    pub interpolation_check: Option<interpolation::InterpolationCheckResults>,
     should_exit: bool,
+    pub dirty: bool,
 
     // filesystem watching
     pub(crate) filesystem_watch_tx: Sender<path::PathBuf>,
@@ -49,21 +49,49 @@ impl Default for UFOViewer {
         let (fstx, fsrx) = std::sync::mpsc::channel();
 
         UFOViewer {
+            active_master_idx: None,
             filesystem_watch_tx: fstx,
             filesystem_watch_rx: fsrx,
-            ufo: Default::default(),
-            ufo_cache: Default::default(),
+            masters: Default::default(),
             filter_string: Default::default(),
             filter_block: Default::default(),
             sort_by_blocks: Default::default(),
             glyph_name_map: Default::default(),
             should_exit: Default::default(),
+            interpolation_check: None,
+            dirty: false,
         }
     }
 }
 
 impl UFOViewer {
-    pub fn set_font(&mut self, path: PathBuf) {
+    pub fn get_active_master(&self) -> Option<&UFO> {
+        return self.masters.get(self.active_master_idx.unwrap_or(0));
+    }
+
+    pub fn set_active_master(&mut self, idx: usize) {
+        self.active_master_idx = Some(idx);
+    }
+
+    pub fn set_font(&mut self, path:&PathBuf) {
+        self.masters = Vec::new();
+        self.set_active_master(0);
+
+        let ufo = self.load_ufo_from_path(path);
+        self.populate_glyph_name_map(&ufo);
+        self.masters.push(ufo);
+
+        ipc::launch_fs_watcher(self, path);
+    }
+
+    pub fn add_master(&mut self, path: &PathBuf) {
+        let ufo = self.load_ufo_from_path(path);
+        self.masters.push(ufo);
+        self.dirty = true;
+        self.interpolation_check = Some(interpolation::check_interpolatable(&self.masters));
+    }
+
+    pub fn load_ufo_from_path(&mut self, path: &PathBuf) -> UFO {
         if let Ok((v, pbuf)) = available("metadata", "0.0.4") {
             match v {
                 mfek_ipc::module::Version::OutOfDate(_) => {
@@ -76,17 +104,11 @@ impl UFOViewer {
             let metadata = self.fetch_metadata(&pbuf, &path);
             let unicode_blocks = Self::get_unicode_blocks(path.clone());
 
-            let ufo = UFO {
+            UFO {
                 metadata,
                 glyph_entries,
                 unicode_blocks,
-            };
-
-            self.populate_glyph_name_map(&ufo);
-
-            self.ufo = Some(ufo);
-            self.ufo_cache = UFOCache::default();
-            ipc::launch_fs_watcher(self, path);
+            }
         } else {
             panic!("Failed to locate mfekmetadata! Is it installed on your system?")
         }
@@ -131,6 +153,10 @@ impl UFOViewer {
         // Pass the &str to the parse_tsv function
         match parse_tsv(stdout_str) {
             Ok(data) => {
+                let mut data = data.clone();
+                data.sort_by(|a, b| {
+                    a.codepoints.cmp(&b.codepoints)
+                });
                 return data;
             }
             Err(err) => panic!("Error parsing TSV data: {}", err),
@@ -180,14 +206,12 @@ impl UFOViewer {
         }
     }
 
-    pub fn handle_filesystem_events(&mut self) {
+    pub fn handle_filesystem_events(&mut self, ufo_cache: &mut UFOCache) {
         loop {
             let event = self.filesystem_watch_rx.try_recv();
             match event {
                 Ok(p) => {
-                    if p.extension() == Some(OsStr::new("glif"))
-                        || p.extension() == Some(OsStr::new("glifjson"))
-                    {
+                    if p.extension() == Some(OsStr::new("glif")) {
                         // load the glif
                         let mut glif: Glif<()> =
                             glifparser::read_from_filename(&p).expect("Failed to load glyph!");
@@ -195,13 +219,17 @@ impl UFOViewer {
                             glif = glif.flattened(&mut None).unwrap_or(glif);
                         }
 
-                        let ufo = self.ufo.as_ref().unwrap();
-
-                        for potential_match in &ufo.glyph_entries {
-                            if glif.name == potential_match.glifname {
-                                self.ufo_cache.force_rebuild(potential_match);
+                        for ufo in &mut self.masters {
+                            for potential_match in &mut ufo.glyph_entries {
+                                if glif.filename == potential_match.glif.filename {
+                                    println!("REPLACING GLIF!");
+                                    potential_match.glif = glif.clone();
+                                }
                             }
                         }
+
+                        self.interpolation_check = Some(interpolation::check_interpolatable(&self.masters));
+                        self.dirty = true;
                     } else {
                         log::debug!("Ignored write of file {:?}", p)
                     }

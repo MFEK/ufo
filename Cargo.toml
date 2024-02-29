@@ -7,15 +7,16 @@ edition = "2021"
 
 [dependencies]
 gl = "0.14.0"
-skia-safe = { version = "0.53.0", features = ["gl"] }
-skia-bindings = "*"
+skia-safe = { version = "0.69.0", features = ["gl"] }
+skia-bindings = { version = "0.69.0", features = ["gl"] }
 
 # For windowing, contexts, and events
 sdl2 = { version = ">=0.34", features = ["raw-window-handle"] }
 
-egui = { version = "=0.22.0" }
-egui_skia = { version = "=0.3.0" }
-egui-sdl2-event = { version = "=0.4.0", package = "egui-skia-sdl2-event" }
+egui = { git = "https://github.com/MFEK/egui.rlib" }
+egui-sdl2-event = { git = "https://github.com/MFEK/egui-sdl2-event.rlib" }
+egui_skia = { git = "https://github.com/MFEK/egui_skia.rlib" }
+
 # For argument parsing
 clap = "3.0"
 
@@ -23,7 +24,7 @@ clap = "3.0"
 nfd = { git = "https://github.com/MFEK/nfd.rs" }
 
 # File locking
-fs2 = "0.4"
+fs2 = "0.3"
 
 # Command parsing for console
 regex = "1"
@@ -43,8 +44,8 @@ pub-mod = { git = "https://github.com/MFEK/pub_mod.rlib" }
 mfek-ipc = { git = "https://github.com/MFEK/ipc.rlib" }
 #mfek-ipc = { path = "../ipc.rlib" } # for development
 
-#glifrenderer = { git = "https://github.com/MFEK/glifrenderer.rlib" }
-glifrenderer = { path = "../glifrenderer.rlib" } # for development
+glifrenderer = { git = "https://github.com/MFEK/glifrenderer.rlib" }
+#glifrenderer = { path = "../glifrenderer.rlib" } # for development
 
 norad = "0.10.0"
 
@@ -56,9 +57,11 @@ image = { version = "0.24.6", features = ["png"], default-features = false }
 csv = "1.2.1"
 fuzzy-matcher = "0.3.7"
 
-libmfekufo = {path = "src/ufoblocks"}
+libmfekufo = {git = "https://github.com/MFEK/ufoblocks.rlib"}
+#libmfekufo = { path = "../ufoblocks.rlib" } # for development
 
-kurbo = { version = "0.9.0", features = ["serde", "std"] }
+kurbo = { git = "https://github.com/MFEK/kurbo.rlib", branch = "master" }
+backtrace-on-stack-overflow = "0.3.0"
 
 [features]
 sdl2-static = ["sdl2/bundled", "sdl2/static-link"]

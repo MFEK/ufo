@@ -8,8 +8,8 @@ pub fn menu(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Interfa
                 if ui.button("Open").clicked() {
                     match filedialog::open_folder(None) {
                         Some(f) => {
-                            viewer.set_font(f);
-                            let font = viewer.ufo.as_ref().unwrap();
+                            viewer.set_font(&f);
+                            let font = viewer.get_active_master().unwrap();
                             interface
                                 .set_window_title(
                                     format!("MFEKUFO — {0}", font.metadata.name).as_str(),
@@ -19,6 +19,16 @@ pub fn menu(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Interfa
                         None => {}
                     };
                 }
+
+                if viewer.get_active_master().is_some() && ui.button("Add Master").clicked() {
+                    match filedialog::open_folder(None) {
+                        Some(f) => {
+                            viewer.add_master(&f);
+                        }
+                        None => {}
+                    }; 
+                }
+
                 if ui.button("Exit").clicked() {
                     viewer.exit();
                 }

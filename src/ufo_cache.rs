@@ -11,7 +11,7 @@ use skia_safe::{Color, Color4f, Font, Paint, Point, Surface, TextBlob, Typeface}
 
 use std::{ffi::OsString as Oss, fs, path::Path};
 
-use crate::parsing::{glyph_entries::GlyphEntry, metadata::Metadata};
+use crate::{interpolation, parsing::{glyph_entries::GlyphEntry, metadata::Metadata}};
 
 #[derive(Default)]
 pub struct UFOCache {
@@ -52,14 +52,30 @@ impl UFOCache {
         self.needs_rebuild.push_front(entry.clone())
     }
 
-    pub fn rebuild_images(&mut self, ctx: &Context, metadata: &Metadata) {
+    pub fn force_rebuild_all(&mut self) {
+        let entries_to_remove: Vec<_> = self.texture_handles.keys().cloned().collect();
+    
+        for entry in entries_to_remove {
+            self.texture_handles.remove(&entry);
+            self.needs_rebuild.push_front(entry);
+        }
+    }
+
+    pub fn rebuild_images(&mut self, ctx: &Context, metadata: &Metadata, interp_check: &Option<interpolation::InterpolationCheckResults>) {
         let time_limit = 1. / 30.;
         let start_time = Instant::now();
 
         while start_time.elapsed().as_secs_f32() < time_limit {
             let to_rebuild = self.needs_rebuild.pop_back();
             if let Some(entry) = to_rebuild {
-                self.generate_image_handle(ctx, &entry, metadata)
+                let mut interp_success = true;
+
+                if let Some(interp_info) = interp_check {
+                    if interp_info.combined.get(&entry.uniname).is_some() {
+                        interp_success = false;
+                    }
+                }
+                self.generate_image_handle(ctx, &entry, metadata, interp_success)
             } else {
                 break;
             }
@@ -75,14 +91,13 @@ impl UFOCache {
         ctx: &Context,
         glyph_entry: &GlyphEntry,
         metadata: &Metadata,
+        interp_success: bool,
     ) {
         if self.texture_handles.contains_key(glyph_entry) {
             return;
         }
 
-        // load the glif
-        let mut glif: Glif<()> =
-            glifparser::read_from_filename(&glyph_entry.filename).expect("Failed to load glyph!");
+        let mut glif: Glif<()> = glyph_entry.glif.clone();
         if glif.components.vec.len() > 0 {
             glif = glif.flattened(&mut None).unwrap_or(glif);
         }
@@ -101,7 +116,7 @@ impl UFOCache {
         ));
 
         let (size, image_data) =
-            self.create_canvas_and_get_image_data(&mfekglif, &mut viewport, egui_text_color);
+            self.create_canvas_and_get_image_data(&mfekglif, &mut viewport, egui_text_color, interp_success);
         let egui_image = egui::ColorImage::from_rgba_unmultiplied([size, size], &image_data);
 
         let texture_handle = ctx.load_texture(glif_name, egui_image, Default::default());
@@ -164,13 +179,14 @@ impl UFOCache {
         mfekglif: &MFEKGlif<()>,
         viewport: &mut Viewport,
         text_color: Color,
+        interp_success: bool
     ) -> (usize, Vec<u8>) {
         let dimension: usize = 128;
 
         // Draw the Glyph name
         let mut paint = Paint::new(Color4f::new(1., 1., 1., 1.), None);
         paint.set_color(text_color);
-        let typeface = Typeface::default();
+        let typeface: skia_safe::RCHandle<skia_bindings::SkTypeface> = Typeface::default();
         let font = Font::new(typeface, 12.0); // Adjust the font size here
         let text_blob = TextBlob::new(&mfekglif.name, &font).unwrap();
 
@@ -196,6 +212,18 @@ impl UFOCache {
             dimension as f32 - text_height,
         );
         canvas.draw_text_blob(&text_blob, text_position, &paint);
+
+        if !interp_success {
+            let typeface: skia_safe::RCHandle<skia_bindings::SkTypeface> = Typeface::default();
+            let font = Font::new(typeface, 24.0); // Adjust the font size here
+            let text_blob = TextBlob::new("!", &font).unwrap();
+            let text_position = Point::new(
+                dimension as f32 - 24.,
+                dimension as f32 - 24.
+            );
+
+            canvas.draw_text_blob(&text_blob, text_position, &paint);
+        }
 
         // Draw the glyph
         let style = Style::new(Color::new(0xffffffff), text_color.into());

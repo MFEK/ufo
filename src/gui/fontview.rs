@@ -4,17 +4,17 @@ use egui::{style::WidgetVisuals, Color32, Stroke, Style};
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 
-use crate::{interface::Interface, parsing::glyph_entries::GlyphEntry, viewer::UFOViewer};
+use crate::{interface::Interface, parsing::glyph_entries::GlyphEntry, ufo_cache::UFOCache, viewer::UFOViewer};
 
-pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Interface) {
-    viewer.ufo_cache.create_default_texture(ctx);
+pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, ufo_cache: &mut UFOCache) {
+    ufo_cache.create_default_texture(ctx);
 
-    if let Some(ufo) = &viewer.ufo {
-        viewer.ufo_cache.rebuild_images(ctx, &ufo.metadata);
+    if let Some(ufo) = viewer.get_active_master() {
+        ufo_cache.rebuild_images(ctx, &ufo.metadata, &viewer.interpolation_check);
     }
 
-    viewer.ufo_cache.clear_rebuild();
-    viewer.handle_filesystem_events();
+    ufo_cache.clear_rebuild();
+    viewer.handle_filesystem_events(ufo_cache);
 
     filter_side_panel(ctx, viewer);
 
@@ -30,10 +30,27 @@ pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Int
     };
 
     egui::CentralPanel::default().show(ctx, |ui| {
-        if let Some(ufo) = &viewer.ufo {
+        let mut filter_string = viewer.filter_string.clone();
+        let mut master_idx = viewer.active_master_idx;
+
+        if let Some(ufo) = viewer.get_active_master() {
             ui.horizontal(|ui| {
                 ui.label("Search:");
-                ui.text_edit_singleline(&mut viewer.filter_string);
+                ui.text_edit_singleline(&mut filter_string);
+
+                egui::ComboBox::from_label("Master")
+                    .selected_text(format!("{:1}", ufo.metadata.name))
+                    .show_ui(ui, |ui| {
+                        for (idx, master) in viewer.masters.iter().enumerate() {
+                            ui.selectable_value(&mut master_idx, Some(idx), master.metadata.name.clone());
+                        }
+                    });
+
+                if let Some(check) = &viewer.interpolation_check {
+                    if !check.succeeded {
+                        ui.label("Interpolation errors found!");
+                    }
+                }
             });
 
             egui::ScrollArea::vertical()
@@ -83,8 +100,7 @@ pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Int
                             .iter()
                             .filter(|entry| visible_set.contains(entry))
                             .for_each(|entry| {
-                                let glyph_image =
-                                    viewer.ufo_cache.get_image_handle(&entry, &ufo.metadata);
+                                let glyph_image = ufo_cache.get_image_handle(&entry, &ufo.metadata);
 
                                 let response =
                                     ui.add(egui::ImageButton::new(glyph_image, [128., 128.]));
@@ -107,13 +123,20 @@ pub fn fontview(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Int
                 );
             });
         }
+
+        viewer.filter_string = filter_string;
+        if let Some(idx) = master_idx {
+            viewer.set_active_master(idx);
+        }
     });
 
     ctx.set_style(original_style);
 }
 
 fn filter_side_panel(ctx: &egui::Context, viewer: &mut UFOViewer) {
-    if let Some(ufo) = &viewer.ufo {
+    let mut filter_block = viewer.filter_block.to_owned();
+
+    if let Some(ufo) = viewer.get_active_master() {
         egui::SidePanel::left("my_left_panel").show(ctx, |ui| {
             egui::ScrollArea::vertical()
                 .stick_to_right(true)
@@ -123,18 +146,20 @@ fn filter_side_panel(ctx: &egui::Context, viewer: &mut UFOViewer) {
                         .selectable_label(viewer.filter_block.is_none(), "All")
                         .clicked()
                     {
-                        viewer.filter_block = None;
+                        filter_block = None;
                     }
 
                     for block in &ufo.unicode_blocks {
-                        let checked = Some(block.name) == viewer.filter_block.as_deref();
+                        let checked = Some(block.name) == filter_block.as_deref();
                         if ui.selectable_label(checked, block.name).clicked() {
-                            viewer.filter_block = Some(block.name.to_owned());
+                            filter_block = Some(block.name.to_owned());
                         }
                     }
                 });
         });
     }
+
+    viewer.filter_block = filter_block;
 }
 
 fn filter_glyphs<'a>(glyph_entries: &'a [GlyphEntry], query: &str) -> Vec<&'a GlyphEntry> {

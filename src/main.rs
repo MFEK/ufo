@@ -7,14 +7,14 @@ mod parsing;
 mod ufo_cache;
 mod util;
 mod viewer;
+mod interpolation;
 
 use interface::Interface;
 
 use gui::fontview::fontview;
 use gui::menu::menu;
-use libmfekufo::{blocks, glyphs};
 
-use crate::viewer::UFOViewer;
+use crate::{ufo_cache::UFOCache, viewer::UFOViewer};
 
 /// This is a mix of the rust-sdl2 opengl example,
 /// the skia-safe gl window example: https://github.com/rust-skia/rust-skia/blob/master/skia-safe/examples/gl-window/main.rs
@@ -23,6 +23,7 @@ fn main() {
     extern crate gl;
     extern crate sdl2;
 
+    unsafe { backtrace_on_stack_overflow::enable(); }
     use egui_sdl2_event::EguiSDL2State;
     use sdl2::event::{Event, WindowEvent};
     use sdl2::keyboard::Keycode;
@@ -31,19 +32,27 @@ fn main() {
     use egui_skia::EguiSkia;
 
     let mut viewer: UFOViewer = UFOViewer::default();
+    let mut cache: UFOCache = UFOCache::default();
+
     let mut interface = Interface::new((800., 600.));
 
-    let mut egui_sdl2_state = EguiSDL2State::new(
+    let mut egui_sdl2_state: EguiSDL2State = EguiSDL2State::new(
         &interface.sdl_window,
         &interface.sdl_context.video().unwrap(),
         DpiMode::Custom(1.),
     );
+
     let mut egui_skia = EguiSkia::new();
     let mut surface = interface.create_surface();
 
     'running: loop {
         if viewer.is_requesting_exit() {
             break;
+        }
+
+        if viewer.dirty {
+            cache.force_rebuild_all();
+            viewer.dirty = false;
         }
 
         for event in interface.get_event_pump().poll_iter() {
@@ -76,7 +85,7 @@ fn main() {
             egui_sdl2_state.take_egui_input(&interface.sdl_window),
             |ctx| {
                 menu(ctx, &mut viewer, &mut interface);
-                fontview(ctx, &mut viewer, &mut interface);
+                fontview(ctx, &mut viewer, &mut cache);
             },
         );
         egui_sdl2_state.process_output(&interface.sdl_window, &full_output);
@@ -84,7 +93,7 @@ fn main() {
         let canvas = surface.canvas();
         canvas.clear(Color::BLACK);
         egui_skia.paint(canvas);
-        surface.flush();
+        interface.gr_context.flush_and_submit_surface(&mut surface, None);
         interface.sdl_window.gl_swap_window();
     }
 }

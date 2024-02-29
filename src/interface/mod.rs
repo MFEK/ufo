@@ -4,8 +4,8 @@ use sdl2::{
 };
 use skia_bindings::{GrDirectContext, GrSurfaceOrigin};
 use skia_safe::{
-    gpu::{gl::FramebufferInfo, BackendRenderTarget},
-    ColorType, RCHandle, Surface,
+    gpu::{self, gl::FramebufferInfo, BackendRenderTarget},
+    ColorType, RCHandle,
 };
 
 mod sdl;
@@ -53,9 +53,9 @@ impl Interface {
         let (width, height) = self.sdl_window.drawable_size();
 
         let backend_render_target =
-            BackendRenderTarget::new_gl((width as i32, height as i32), 0, 8, self.fb_info);
+            gpu::backend_render_targets::make_gl((width as i32, height as i32), 0, 8, self.fb_info);
 
-        Surface::from_backend_render_target(
+        gpu::surfaces::wrap_backend_render_target(
             &mut self.gr_context,
             &backend_render_target,
             GrSurfaceOrigin::BottomLeft,
@@ -74,5 +74,6 @@ fn fb_info() -> FramebufferInfo {
     FramebufferInfo {
         fboid: fboid.try_into().unwrap(),
         format: skia_safe::gpu::gl::Format::RGBA8.into(),
+        protected: skia_safe::gpu::Protected::No
     }
 }

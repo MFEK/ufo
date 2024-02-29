@@ -1,18 +1,26 @@
 use csv::{ReaderBuilder, StringRecord};
+use glifparser::Glif;
 use std::collections::HashMap;
 use std::error::Error;
+use std::hash::{Hash, Hasher};
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct GlyphEntry {
     pub glifname: String,
     pub codepoints: String,
     pub uniname: String,
     pub unicat: String,
     pub filename: String,
+    pub glif: Glif<()>,
 }
 
 impl From<(&HashMap<String, usize>, &StringRecord)> for GlyphEntry {
     fn from((header_map, record): (&HashMap<String, usize>, &StringRecord)) -> Self {
+        let filename = record
+            .get(*header_map.get("filename").unwrap())
+            .unwrap()
+            .to_string();
+
         GlyphEntry {
             glifname: record
                 .get(*header_map.get("glifname").unwrap())
@@ -30,13 +38,21 @@ impl From<(&HashMap<String, usize>, &StringRecord)> for GlyphEntry {
                 .get(*header_map.get("unicat").unwrap())
                 .unwrap()
                 .to_string(),
-            filename: record
-                .get(*header_map.get("filename").unwrap())
-                .unwrap()
-                .to_string(),
+            filename: filename.clone(),
+            glif: glifparser::read_from_filename(filename).expect("Failed to load glyph!"),
         }
     }
 }
+
+impl Eq for GlyphEntry {
+
+}
+impl Hash for GlyphEntry {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.filename.hash(state);
+    }
+}
+
 
 pub fn parse_tsv(tsv_data: &str) -> Result<Vec<GlyphEntry>, Box<dyn Error>> {
     let mut reader = ReaderBuilder::new()
@@ -58,5 +74,6 @@ pub fn parse_tsv(tsv_data: &str) -> Result<Vec<GlyphEntry>, Box<dyn Error>> {
         let glyph = GlyphEntry::from((&header_map, &record));
         data.push(glyph);
     }
+    
     Ok(data)
 }
