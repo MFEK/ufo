@@ -23,6 +23,7 @@ use mfek_ipc::module::{available, binaries};
 
 pub struct UFO {
     pub metadata: Metadata,
+    pub path: PathBuf,
     pub glyph_entries: Vec<GlyphEntry>,
     pub unicode_blocks: Vec<Block>,
 }
@@ -86,6 +87,13 @@ impl UFOViewer {
 
     pub fn add_master(&mut self, path: &PathBuf) {
         let ufo = self.load_ufo_from_path(path);
+
+        for master in &self.masters {
+            if master.path == ufo.path {
+                return;
+            }
+        }
+
         self.masters.push(ufo);
         self.dirty = true;
         self.interpolation_check = Some(interpolation::check_interpolatable(&self.masters));
@@ -108,6 +116,7 @@ impl UFOViewer {
                 metadata,
                 glyph_entries,
                 unicode_blocks,
+                path: path.clone()
             }
         } else {
             panic!("Failed to locate mfekmetadata! Is it installed on your system?")
