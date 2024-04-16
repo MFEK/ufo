@@ -1,6 +1,5 @@
 use std::{
     collections::{HashMap, VecDeque},
-    path::PathBuf,
     time::Instant,
 };
 
@@ -8,8 +7,6 @@ use egui::{Context, TextureHandle};
 use glifparser::{FlattenedGlif, Glif, MFEKGlif};
 use glifrenderer::{glyph::Style, toggles::PreviewMode, viewport::Viewport};
 use skia_safe::{Color, Color4f, Font, Paint, Point, Surface, TextBlob, Typeface};
-
-use std::{ffi::OsString as Oss, fs, path::Path};
 
 use crate::{interpolation, parsing::{glyph_entries::GlyphEntry, metadata::Metadata}};
 
@@ -24,7 +21,6 @@ impl UFOCache {
     pub fn get_image_handle(
         &mut self,
         glyph_entry: &GlyphEntry,
-        metadata: &Metadata,
     ) -> &TextureHandle {
         let texture_handle = self.texture_handles.get(glyph_entry);
 
@@ -45,11 +41,6 @@ impl UFOCache {
 
         let texture_handle = ctx.load_texture("default", egui_image, Default::default());
         self.default_texture = Some(texture_handle);
-    }
-
-    pub fn force_rebuild(&mut self, entry: &GlyphEntry) {
-        self.texture_handles.remove(entry);
-        self.needs_rebuild.push_front(entry.clone())
     }
 
     pub fn force_rebuild_all(&mut self) {
@@ -133,7 +124,7 @@ impl UFOCache {
         let canvas_size = 128.0;
         let factor = canvas_size / (ascender - descender + 12) as f32 * 0.6;
         let glyph_width = glyph.width.unwrap_or(0);
-        let x_offset = (glyph_width as f32 / 2.0);
+        let x_offset = glyph_width as f32 / 2.0;
         let y_offset = (ascender as f32 - descender as f32)/2.;
     
         let mut viewport = Viewport::default();
@@ -164,7 +155,7 @@ impl UFOCache {
 
         // Create a buffer to store the image data
         let row_bytes = image_info.min_row_bytes();
-        let size = (row_bytes * (dimension));
+        let size = row_bytes * (dimension);
         let mut image_data = vec![0u8; size];
 
         // Read the pixels from the Surface into the buffer
@@ -235,7 +226,7 @@ impl UFOCache {
 
         // Create a buffer to store the image data
         let row_bytes = image_info.min_row_bytes();
-        let size = (row_bytes * (dimension));
+        let size = row_bytes * (dimension);
         let mut image_data = vec![0u8; size];
 
         // Read the pixels from the Surface into the buffer
@@ -243,32 +234,5 @@ impl UFOCache {
         assert!(success, "Failed to read pixels from the Surface");
 
         (dimension, image_data)
-    }
-
-    pub fn load_glif_impl<F: AsRef<Path> + Clone>(&mut self, file: F) -> MFEKGlif<()> {
-        // TODO: Actually handle errors now that we have them.
-        return {
-            let ext = file.as_ref().extension().map(|e| e.to_ascii_lowercase());
-            let ext_or = ext
-                .unwrap_or(Oss::from("glif"))
-                .to_string_lossy()
-                .into_owned();
-            let mut tempglif: MFEKGlif<_> = match ext_or.as_str() {
-                "glifjson" => {
-                    serde_json::from_str(&fs::read_to_string(&file).expect("Could not open file"))
-                        .expect("Could not deserialize JSON MFEKGlif")
-                }
-                "glif" => glifparser::read_from_filename(&file)
-                    .expect("Invalid glif!")
-                    .into(),
-                _ => {
-                    panic!("Failed to load glif file!");
-                }
-            };
-
-            tempglif.filename = Some(file.as_ref().to_path_buf());
-
-            tempglif
-        };
     }
 }

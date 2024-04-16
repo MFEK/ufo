@@ -7,11 +7,8 @@ use sdl2::{
     EventPump, Sdl,
 };
 
-use skia_bindings::{GrDirectContext, GrSurfaceOrigin};
-use skia_safe::{
-    gpu::{gl::FramebufferInfo, BackendRenderTarget},
-    ColorType, RCHandle,
-};
+use skia_bindings::GrDirectContext;
+use skia_safe::RCHandle;
 
 use super::Interface;
 

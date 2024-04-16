@@ -5,7 +5,6 @@ mod interface;
 mod ipc;
 mod parsing;
 mod ufo_cache;
-mod util;
 mod viewer;
 mod interpolation;
 

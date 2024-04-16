@@ -4,7 +4,7 @@ use sdl2::{
 };
 use skia_bindings::{GrDirectContext, GrSurfaceOrigin};
 use skia_safe::{
-    gpu::{self, gl::FramebufferInfo, BackendRenderTarget},
+    gpu::{self, gl::FramebufferInfo},
     ColorType, RCHandle,
 };
 
@@ -16,7 +16,7 @@ pub struct Interface {
     pub sdl_window: SdlWindow,
     winsize: (f32, f32),
 
-    gl_ctx: GLContext,
+    _gl_ctx: GLContext,
     pub gr_context: RCHandle<GrDirectContext>,
     pub fb_info: FramebufferInfo,
 }
@@ -34,7 +34,7 @@ impl Interface {
             sdl_dpi: f32::NAN,
             winsize,
             gr_context,
-            gl_ctx,
+            _gl_ctx: gl_ctx,
             fb_info,
         };
 
@@ -43,10 +43,6 @@ impl Interface {
 
     pub fn set_size(&mut self, winsize: (f32, f32)) {
         self.winsize = winsize;
-    }
-
-    pub fn get_size(&self) -> (f32, f32) {
-        self.winsize
     }
 
     pub fn create_surface(&mut self) -> skia_safe::Surface {

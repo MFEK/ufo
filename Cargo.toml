@@ -16,7 +16,7 @@ sdl2 = { version = ">=0.34", features = ["raw-window-handle"] }
 egui = { git = "https://github.com/MFEK/egui.rlib" }
 egui-sdl2-event = { git = "https://github.com/MFEK/egui-sdl2-event.rlib" }
 egui_skia = { git = "https://github.com/MFEK/egui_skia.rlib" }
-
+egui_dock = { git = "https://github.com/MFEK/egui_dock.rlib" }
 # For argument parsing
 clap = "3.0"
 

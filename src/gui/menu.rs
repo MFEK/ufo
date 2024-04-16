@@ -33,6 +33,19 @@ pub fn menu(ctx: &egui::Context, viewer: &mut UFOViewer, interface: &mut Interfa
                     viewer.exit();
                 }
             });
-        })
+        });
+
+        let mut filter_string = viewer.filter_string.clone();
+        ui.horizontal(|ui| {
+            ui.label("Search:");
+            ui.text_edit_singleline(&mut filter_string);
+
+            if let Some(check) = &viewer.interpolation_check {
+                if !check.succeeded {
+                    ui.label("Interpolation errors found!");
+                }
+            }
+        });
+        viewer.filter_string = filter_string;
     });
 }

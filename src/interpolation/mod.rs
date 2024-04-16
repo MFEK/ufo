@@ -1,7 +1,6 @@
-use std::{collections::{HashMap, HashSet}, hash::Hash};
+use std::collections::{HashMap, HashSet};
 
 use glifparser::contour::State;
-use glifrenderer::glyph;
 
 use crate::viewer::UFO;
 
@@ -40,7 +39,6 @@ pub struct InterpolationCheckResults {
 }
 
 pub(crate) fn check_interpolatable(masters: &Vec<UFO>) -> InterpolationCheckResults {
-    println!("Checking interpolation!");
     // create the set of all glyphs from all masters
     let glyph_set = create_glyph_set(masters);
 
@@ -65,9 +63,6 @@ pub(crate) fn check_interpolatable(masters: &Vec<UFO>) -> InterpolationCheckResu
     let open_states_counts = count_different_contour_open_state(masters);
     let open_states_counts_set: HashSet<String> = open_states_counts.into_iter().map(|(s, _)| s).collect();
 
-    for (gn) in open_states_counts_set.iter() {
-        println!("{:1}", gn);
-    }
     let mut success = false;
     if combined_differences.is_empty() && contour_counts_set.is_empty() && point_counts_set.is_empty() && open_states_counts_set.is_empty() {
         success = true;

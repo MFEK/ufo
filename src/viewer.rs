@@ -3,23 +3,24 @@ use std::{
     collections::HashMap,
     ffi::OsStr,
     path::{self, Path, PathBuf},
-    process::{Command, ExitStatus},
+    process::Command,
     str,
     sync::mpsc::{Receiver, Sender, TryRecvError},
 };
 
 use crate::{
     interpolation, ipc, parsing::{
-        glyph_entries::{self, parse_tsv, GlyphEntry},
+        glyph_entries::{parse_tsv, GlyphEntry},
         metadata::{parse_metadata, Metadata},
-    }, ufo_cache::{self, UFOCache}
+    }
 };
-use glifparser::{FlattenedGlif, Glif, MFEKGlif};
+use egui_dock::DockState;
+use glifparser::{FlattenedGlif, Glif};
 use libmfekufo::{
     blocks::{self, Block},
     glyphs,
 };
-use mfek_ipc::module::{available, binaries};
+use mfek_ipc::module::available;
 
 pub struct UFO {
     pub metadata: Metadata,
@@ -32,6 +33,7 @@ pub struct UFO {
 pub struct UFOViewer {
     pub active_master_idx: Option<usize>,
     pub masters: Vec<UFO>,
+    pub dockstate: DockState<usize>,
     pub filter_string: String,
     pub filter_block: Option<String>,
     pub sort_by_blocks: bool,
@@ -51,6 +53,7 @@ impl Default for UFOViewer {
 
         UFOViewer {
             active_master_idx: None,
+            dockstate: DockState::new(vec![]),
             filesystem_watch_tx: fstx,
             filesystem_watch_rx: fsrx,
             masters: Default::default(),
@@ -81,6 +84,7 @@ impl UFOViewer {
         let ufo = self.load_ufo_from_path(path);
         self.populate_glyph_name_map(&ufo);
         self.masters.push(ufo);
+        self.dockstate.push_to_focused_leaf(self.masters.len() - 1);
 
         ipc::launch_fs_watcher(self, path);
     }
@@ -95,6 +99,7 @@ impl UFOViewer {
         }
 
         self.masters.push(ufo);
+        self.dockstate.push_to_focused_leaf(self.masters.len() - 1);
         self.dirty = true;
         self.interpolation_check = Some(interpolation::check_interpolatable(&self.masters));
     }
@@ -215,7 +220,7 @@ impl UFOViewer {
         }
     }
 
-    pub fn handle_filesystem_events(&mut self, ufo_cache: &mut UFOCache) {
+    pub fn handle_filesystem_events(&mut self) {
         loop {
             let event = self.filesystem_watch_rx.try_recv();
             match event {
@@ -231,7 +236,6 @@ impl UFOViewer {
                         for ufo in &mut self.masters {
                             for potential_match in &mut ufo.glyph_entries {
                                 if glif.filename == potential_match.glif.filename {
-                                    println!("REPLACING GLIF!");
                                     potential_match.glif = glif.clone();
                                 }
                             }
